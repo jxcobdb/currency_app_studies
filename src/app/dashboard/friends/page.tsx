@@ -10,6 +10,7 @@ import { Search, UserPlus, CheckCircle2, X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { Spinner } from "@nextui-org/spinner";
 import { PaymentModal } from "@/app/components/dashboard/friends/payment-modal";
+import { Chip } from "@nextui-org/chip";
 
 interface Profile {
   id: string;
@@ -90,6 +91,10 @@ export default function FriendsPage() {
   const [allUsers, setAllUsers] = useState<Profile[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<Profile | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -222,7 +227,16 @@ export default function FriendsPage() {
     loadData();
   }, []);
 
-  const handleAcceptRequest = async (requestId: string) => {
+  // Show notification helper
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000); // Hide after 3 seconds
+  };
+
+  const handleAcceptRequest = async (
+    requestId: string,
+    senderNickname: string
+  ) => {
     try {
       const { error } = await supabase
         .from("friend_requests")
@@ -230,12 +244,20 @@ export default function FriendsPage() {
         .eq("id", requestId);
 
       if (error) throw error;
+      showNotification(
+        `Friend request from ${senderNickname} accepted`,
+        "success"
+      );
     } catch (error) {
       console.error("Error accepting friend request:", error);
+      showNotification("Failed to accept friend request", "error");
     }
   };
 
-  const handleRejectRequest = async (requestId: string) => {
+  const handleRejectRequest = async (
+    requestId: string,
+    senderNickname: string
+  ) => {
     try {
       const { error } = await supabase
         .from("friend_requests")
@@ -243,12 +265,20 @@ export default function FriendsPage() {
         .eq("id", requestId);
 
       if (error) throw error;
+      showNotification(
+        `Friend request from ${senderNickname} rejected`,
+        "success"
+      );
     } catch (error) {
       console.error("Error rejecting friend request:", error);
+      showNotification("Failed to reject friend request", "error");
     }
   };
 
-  const handleSendFriendRequest = async (receiverId: string) => {
+  const handleSendFriendRequest = async (
+    receiverId: string,
+    receiverNickname: string
+  ) => {
     try {
       if (!currentUser) return;
 
@@ -259,8 +289,10 @@ export default function FriendsPage() {
       });
 
       if (error) throw error;
+      showNotification(`Friend request sent to ${receiverNickname}`, "success");
     } catch (error) {
       console.error("Error sending friend request:", error);
+      showNotification("Failed to send friend request", "error");
     }
   };
 
@@ -337,6 +369,21 @@ export default function FriendsPage() {
   return (
     <div className="flex min-h-screen bg-[#f4f4f4] dark:bg-[#161616]">
       <Sidebar />
+      {/* Notification */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+          <Chip
+            className={`${
+              notification.type === "success"
+                ? "bg-green-500/20 text-green-500"
+                : "bg-red-500/20 text-red-500"
+            } p-4`}
+            size="lg"
+          >
+            {notification.message}
+          </Chip>
+        </div>
+      )}
       <main className="flex-grow p-4 md:p-6 ml-[80px]">
         <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 md:mb-6">
@@ -389,7 +436,12 @@ export default function FriendsPage() {
                               isIconOnly
                               color="success"
                               className={buttonStyles}
-                              onClick={() => handleAcceptRequest(request.id)}
+                              onClick={() =>
+                                handleAcceptRequest(
+                                  request.id,
+                                  request.sender.nickname
+                                )
+                              }
                             >
                               <CheckCircle2 className="w-4 h-4" />
                             </Button>
@@ -397,7 +449,12 @@ export default function FriendsPage() {
                               isIconOnly
                               color="danger"
                               className={buttonStyles}
-                              onClick={() => handleRejectRequest(request.id)}
+                              onClick={() =>
+                                handleRejectRequest(
+                                  request.id,
+                                  request.sender.nickname
+                                )
+                              }
                             >
                               <X className="w-4 h-4" />
                             </Button>
@@ -477,7 +534,9 @@ export default function FriendsPage() {
                           <Button
                             isIconOnly
                             className={buttonStyles}
-                            onClick={() => handleSendFriendRequest(user.id)}
+                            onClick={() =>
+                              handleSendFriendRequest(user.id, user.nickname)
+                            }
                           >
                             <UserPlus className="w-4 h-4" />
                           </Button>
