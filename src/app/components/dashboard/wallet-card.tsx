@@ -93,10 +93,6 @@ export function WalletCard() {
     router.push("/dashboard/wallet");
   };
 
-  const handleAddFunds = () => {
-    router.push("/dashboard/wallet/add-funds");
-  };
-
   if (isLoading) {
     return (
       <Card className="bg-[#d4d4d4] dark:bg-[#292828]">
@@ -172,15 +168,6 @@ export function WalletCard() {
               ))}
             </div>
           )}
-
-          <Button
-            color="success"
-            className="w-full rounded-2xl"
-            startContent={<Plus className="w-4 h-4" />}
-            onPress={handleAddFunds}
-          >
-            Add Funds
-          </Button>
         </div>
       </CardBody>
     </Card>
